@@ -1,0 +1,8 @@
+Patient Name: Emily Clark
+Age: 55
+Gender: Female
+Chief Complaint: Recurrent headaches for 3 months.
+Symptoms: Severe throbbing pain on one side of the head, sensitivity to light and sound, nausea.
+Medical History: Migraines (diagnosed 10 years ago), mild hypertension.
+Medications: Sumatriptan, Propranolol.
+Allergies: Penicillin.

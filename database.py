@@ -283,8 +283,8 @@ class DatabaseManager:
             return None
     
     def save_diagnostic_results(self, user_id: int, patient_record_id: int, 
-                              diagnostic_data: Dict, confidence_threshold: float, 
-                              max_diagnoses: int) -> bool:
+                             diagnostic_data: Dict, confidence_threshold: float, 
+                             max_diagnoses: int) -> bool:
         """Save diagnostic results to database"""
         try:
             conn = sqlite3.connect(self.db_path)

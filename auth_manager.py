@@ -4,7 +4,7 @@ from database import DatabaseManager
 from typing import Optional, Dict
 
 class AuthManager:
-    def __init__(self, db_manager: DatabaseManager):
+    def __init__(self, db_manager: DatabaseManager):   # ✅ Fixed constructor
         self.db_manager = db_manager
         self.session_secret = os.getenv("SESSION_SECRET", "default_session_secret")
     
@@ -51,12 +51,7 @@ class AuthManager:
                 help="Your secure password"
             )
             
-            col1, col2 = st.columns(2)
-            with col1:
-                remember_me = st.checkbox("Remember me", value=False)
-            
-            with col2:
-                forgot_password = st.button("Forgot Password?", type="secondary", disabled=True)
+            remember_me = st.checkbox("Remember me", value=False)
             
             submit_button = st.form_submit_button("🚀 Sign In", type="primary", use_container_width=True)
             
@@ -69,11 +64,9 @@ class AuthManager:
                 user_data = self.db_manager.authenticate_user(username, password)
                 
                 if user_data:
-                    # Create session
                     session_token = self.db_manager.create_session(user_data['id'])
                     
                     if session_token:
-                        # Store user data in session state
                         st.session_state.user = user_data
                         st.session_state.session_token = session_token
                         
@@ -84,11 +77,12 @@ class AuthManager:
                 else:
                     st.error("❌ Invalid username or password. Please try again.")
         
-        # Demo user info (for development/demo purposes)
+        forgot_password = st.button("Forgot Password?", type="secondary", disabled=True, use_container_width=True)
+
         st.markdown("---")
         st.markdown("""
         <div class="netflix-card" style="background: rgba(46, 134, 171, 0.1); border-left: 4px solid var(--medical-blue);">
-            <h4 style="color: var(--medical-blue); margin-bottom: 0.5rem;">👨‍⚕️ Demo Access</h4>
+            <h4 style="color: var(--medical-blue); margin-bottom: 0.5rem;">👨‍⚕ Demo Access</h4>
             <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem;">
                 New to the platform? Create your account using the "Create Account" tab above.
                 All user data is securely encrypted and HIPAA compliant.
@@ -109,43 +103,19 @@ class AuthManager:
             col1, col2 = st.columns(2)
             
             with col1:
-                first_name = st.text_input(
-                    "First Name",
-                    placeholder="Enter your first name"
-                )
-                
-                username = st.text_input(
-                    "Username",
-                    placeholder="Choose a unique username",
-                    help="Username must be unique and will be used for login"
-                )
+                first_name = st.text_input("First Name", placeholder="Enter your first name")
+                username = st.text_input("Username", placeholder="Choose a unique username",
+                                         help="Username must be unique and will be used for login")
             
             with col2:
-                last_name = st.text_input(
-                    "Last Name",
-                    placeholder="Enter your last name"
-                )
-                
-                email = st.text_input(
-                    "Email Address",
-                    placeholder="Enter your email address",
-                    help="We'll use this for account recovery and notifications"
-                )
+                last_name = st.text_input("Last Name", placeholder="Enter your last name")
+                email = st.text_input("Email Address", placeholder="Enter your email address",
+                                      help="We'll use this for account recovery and notifications")
             
-            password = st.text_input(
-                "Password",
-                type="password",
-                placeholder="Create a secure password",
-                help="Password should be at least 8 characters long"
-            )
+            password = st.text_input("Password", type="password", placeholder="Create a secure password",
+                                     help="Password should be at least 8 characters long")
+            confirm_password = st.text_input("Confirm Password", type="password", placeholder="Confirm your password")
             
-            confirm_password = st.text_input(
-                "Confirm Password",
-                type="password",
-                placeholder="Confirm your password"
-            )
-            
-            # Professional role selection
             role = st.selectbox(
                 "Professional Role",
                 options=["Physician", "Nurse Practitioner", "Physician Assistant", "Registered Nurse", 
@@ -153,38 +123,26 @@ class AuthManager:
                 help="Select your professional role in healthcare"
             )
             
-            # Terms and conditions
-            terms_accepted = st.checkbox(
-                "I agree to the Terms of Service and Privacy Policy",
-                help="You must accept the terms to create an account"
-            )
-            
-            hipaa_acknowledged = st.checkbox(
-                "I acknowledge HIPAA compliance requirements",
-                help="By checking this, you confirm understanding of HIPAA requirements for patient data handling"
-            )
+            terms_accepted = st.checkbox("I agree to the Terms of Service and Privacy Policy",
+                                         help="You must accept the terms to create an account")
+            hipaa_acknowledged = st.checkbox("I acknowledge HIPAA compliance requirements",
+                                             help="By checking this, you confirm understanding of HIPAA requirements")
             
             submit_button = st.form_submit_button("🎯 Create Account", type="primary", use_container_width=True)
             
             if submit_button:
-                # Validation
                 validation_errors = []
                 
                 if not all([first_name, last_name, username, email, password, confirm_password]):
                     validation_errors.append("All fields are required")
-                
                 if password != confirm_password:
                     validation_errors.append("Passwords do not match")
-                
                 if len(password) < 8:
                     validation_errors.append("Password must be at least 8 characters long")
-                
                 if not terms_accepted:
                     validation_errors.append("You must accept the Terms of Service")
-                
                 if not hipaa_acknowledged:
                     validation_errors.append("You must acknowledge HIPAA compliance requirements")
-                
                 if "@" not in email or "." not in email:
                     validation_errors.append("Please enter a valid email address")
                 
@@ -193,9 +151,7 @@ class AuthManager:
                         st.error(f"❌ {error}")
                     return
                 
-                # Create user account
                 full_name = f"{first_name.strip()} {last_name.strip()}"
-                
                 success = self.db_manager.create_user(
                     username=username.strip(),
                     email=email.strip().lower(),
@@ -206,13 +162,10 @@ class AuthManager:
                 if success:
                     st.success("✅ Account created successfully! Please sign in with your new credentials.")
                     st.balloons()
-                    
-                    # Auto-switch to login tab (would need additional UI logic)
                     st.info("👈 Switch to the 'Sign In' tab to access your account.")
                 else:
                     st.error("❌ Account creation failed. Username or email may already be in use.")
         
-        # Security notice
         st.markdown("---")
         st.markdown("""
         <div class="netflix-card" style="background: rgba(40, 167, 69, 0.1); border-left: 4px solid var(--medical-green);">
@@ -228,19 +181,15 @@ class AuthManager:
         """Check if user is authenticated"""
         if 'user' not in st.session_state or not st.session_state.user:
             return False
-        
         if 'session_token' not in st.session_state or not st.session_state.session_token:
             return False
         
-        # Validate session token
         user_data = self.db_manager.validate_session(st.session_state.session_token)
         
         if user_data:
-            # Update session state with fresh user data
             st.session_state.user = user_data
             return True
         else:
-            # Clear invalid session
             self.logout()
             return False
     
@@ -249,7 +198,6 @@ class AuthManager:
         if 'session_token' in st.session_state and st.session_state.session_token:
             self.db_manager.logout_user(st.session_state.session_token)
         
-        # Clear session state
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         
@@ -271,7 +219,6 @@ class AuthManager:
         """Display user info in sidebar"""
         if 'user' in st.session_state and st.session_state.user:
             user = st.session_state.user
-            
             with st.sidebar:
                 st.markdown("---")
                 st.markdown("""
@@ -290,4 +237,3 @@ class AuthManager:
                 
                 if st.button("🚪 Logout", type="secondary", use_container_width=True):
                     self.logout()
-

@@ -9,6 +9,10 @@ from user_dashboard import UserDashboard
 from diagnostic_engine import DiagnosticEngine
 from data_processor import DataProcessor
 from auth_manager import AuthManager
+from io import StringIO, BytesIO
+
+from dotenv import load_dotenv
+load_dotenv()
 
 # Page configuration
 st.set_page_config(
@@ -19,38 +23,166 @@ st.set_page_config(
 )
 
 # Netflix-inspired CSS styling
-def load_css():
+def load_css(theme):
+    if theme == 'dark':
+        st.markdown("""
+        <style>
+        /* Global Variables for DARK Theme */
+        :root {
+            --netflix-red: #E50914;
+            --netflix-black: #141414;
+            --netflix-dark-gray: #2F2F2F;
+            --netflix-gray: #808080;
+            --netflix-light-gray: #B3B3B3;
+            --medical-blue: #2E86AB;
+            --medical-green: #28A745;
+            --medical-orange: #FD7E14;
+            --medical-purple: #6F42C1;
+            --success-green: #00D4AA;
+            --warning-orange: #FF8A00;
+            --danger-red: #FF3366;
+            --background-dark: #0F0F0F;
+            --card-dark: #1A1A1A;
+            --text-primary: #FFFFFF;
+            --text-secondary: #B3B3B3;
+        }
+        
+        /* Dark Theme Base Styles */
+        .stApp {
+            background: linear-gradient(135deg, var(--background-dark) 0%, var(--netflix-black) 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text-primary);
+        }
+        
+        .css-1d391kg {
+            background: var(--netflix-dark-gray);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .css-1d391kg .css-1v0mbdj {
+            background: var(--netflix-dark-gray);
+        }
+        
+        .stTabs [data-baseweb="tab-list"] {
+            background: var(--netflix-dark-gray);
+        }
+        
+        .streamlit-expanderHeader {
+            background: var(--card-dark);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stFileUploader {
+            background: var(--card-dark);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        .stFileUploader:hover {
+            border-color: var(--medical-blue);
+            background: rgba(46, 134, 171, 0.05);
+        }
+        
+        .netflix-card {
+            background: var(--card-dark);
+        }
+
+        .patient-card {
+            background: var(--card-dark);
+        }
+        
+        .diagnosis-card {
+            background: var(--card-dark);
+        }
+        
+        </style>
+        """, unsafe_allow_html=True)
+
+    else: # Light theme
+        st.markdown("""
+        <style>
+        /* Global Variables for LIGHT Theme */
+        :root {
+            --netflix-red: #E50914;
+            --medical-blue: #2E86AB;
+            --medical-green: #28A745;
+            --medical-orange: #FD7E14;
+            --medical-purple: #6F42C1;
+            --success-green: #00D4AA;
+            --warning-orange: #FF8A00;
+            --danger-red: #FF3366;
+            --background-light: #F0F2F6;
+            --card-light: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #000000;
+        }
+        
+        /* Light Theme Base Styles */
+        .stApp {
+            background: linear-gradient(135deg, var(--background-light) 0%, #DDE3E9 100%);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+        }
+        
+        .css-1d391kg {
+            background: #E8EBF1;
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .css-1d391kg .css-1v0mbdj {
+            background: #E8EBF1;
+        }
+
+        .stTabs [data-baseweb="tab-list"] {
+            background: #E8EBF1;
+        }
+        
+        .streamlit-expanderHeader {
+            background: var(--card-light);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .stFileUploader {
+            background: var(--card-light);
+            border: 2px dashed rgba(0, 0, 0, 0.2);
+        }
+        
+        .stFileUploader:hover {
+            border-color: var(--medical-blue);
+            background: rgba(46, 134, 171, 0.05);
+        }
+        
+        .netflix-card {
+            background: var(--card-light);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .patient-card {
+            background: var(--card-light);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .diagnosis-card {
+            background: var(--card-light);
+            border-left: 4px solid var(--medical-blue);
+        }
+
+        /* Hero section title for light mode */
+        .hero-title {
+            background: linear-gradient(135deg, var(--text-primary), var(--medical-blue));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        </style>
+        """, unsafe_allow_html=True)
+
+    # Common styles for both themes
     st.markdown("""
     <style>
     /* Import Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    /* Global Variables */
-    :root {
-        --netflix-red: #E50914;
-        --netflix-black: #141414;
-        --netflix-dark-gray: #2F2F2F;
-        --netflix-gray: #808080;
-        --netflix-light-gray: #B3B3B3;
-        --medical-blue: #2E86AB;
-        --medical-green: #28A745;
-        --medical-orange: #FD7E14;
-        --medical-purple: #6F42C1;
-        --success-green: #00D4AA;
-        --warning-orange: #FF8A00;
-        --danger-red: #FF3366;
-        --background-dark: #0F0F0F;
-        --card-dark: #1A1A1A;
-        --text-primary: #FFFFFF;
-        --text-secondary: #B3B3B3;
-    }
-    
-    /* Reset and Base Styles */
-    .stApp {
-        background: linear-gradient(135deg, var(--background-dark) 0%, var(--netflix-black) 100%);
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        color: var(--text-primary);
-    }
     
     /* Hide Streamlit Elements */
     #MainMenu {visibility: hidden;}
@@ -82,10 +214,6 @@ def load_css():
         font-size: 3.5rem;
         font-weight: 700;
         margin-bottom: 1rem;
-        background: linear-gradient(135deg, var(--text-primary), var(--medical-blue));
-        background-clip: text;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
         position: relative;
         z-index: 1;
     }
@@ -100,11 +228,9 @@ def load_css():
     
     /* Netflix-style Cards */
     .netflix-card {
-        background: var(--card-dark);
         border-radius: 15px;
         padding: 1.5rem;
         margin-bottom: 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.1);
         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         position: relative;
         overflow: hidden;
@@ -126,7 +252,6 @@ def load_css():
     .netflix-card:hover {
         transform: translateY(-8px);
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-        border-color: rgba(255, 255, 255, 0.2);
     }
     
     .netflix-card:hover::before {
@@ -142,7 +267,6 @@ def load_css():
     }
     
     .patient-card {
-        background: var(--card-dark);
         border-radius: 15px;
         padding: 1.5rem;
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -179,11 +303,9 @@ def load_css():
     
     /* Diagnostic Cards */
     .diagnosis-card {
-        background: var(--card-dark);
         border-radius: 15px;
         padding: 1.5rem;
         margin-bottom: 1rem;
-        border-left: 4px solid var(--medical-blue);
         transition: all 0.3s ease;
         position: relative;
     }
@@ -235,16 +357,6 @@ def load_css():
         font-weight: 600;
     }
     
-    /* Sidebar Styling */
-    .css-1d391kg {
-        background: var(--netflix-dark-gray);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .css-1d391kg .css-1v0mbdj {
-        background: var(--netflix-dark-gray);
-    }
-    
     /* Button Styling */
     .stButton > button {
         background: linear-gradient(135deg, var(--netflix-red), #B71C1C);
@@ -264,24 +376,8 @@ def load_css():
         background: linear-gradient(135deg, #B71C1C, var(--netflix-red));
     }
     
-    /* File Uploader */
-    .stFileUploader {
-        background: var(--card-dark);
-        border: 2px dashed rgba(255, 255, 255, 0.2);
-        border-radius: 15px;
-        padding: 2rem;
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-    
-    .stFileUploader:hover {
-        border-color: var(--medical-blue);
-        background: rgba(46, 134, 171, 0.05);
-    }
-    
     /* Metrics */
     .css-1xarl3l {
-        background: var(--card-dark);
         border-radius: 15px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         padding: 1rem;
@@ -294,13 +390,6 @@ def load_css():
     }
     
     /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        background: var(--netflix-dark-gray);
-        border-radius: 10px;
-        padding: 0.5rem;
-        gap: 0.5rem;
-    }
-    
     .stTabs [data-baseweb="tab"] {
         background: transparent;
         border-radius: 8px;
@@ -313,13 +402,6 @@ def load_css():
     .stTabs [aria-selected="true"] {
         background: var(--netflix-red);
         color: white;
-    }
-    
-    /* Expander */
-    .streamlit-expanderHeader {
-        background: var(--card-dark);
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
     /* Loading Animation */
@@ -388,6 +470,7 @@ def load_css():
     </style>
     """, unsafe_allow_html=True)
 
+
 def initialize_components():
     """Initialize all application components"""
     if 'db_manager' not in st.session_state:
@@ -400,6 +483,10 @@ def initialize_components():
         st.session_state.diagnostic_engine = DiagnosticEngine()
     if 'data_processor' not in st.session_state:
         st.session_state.data_processor = DataProcessor()
+    # Initialize theme with a default value
+    if 'theme' not in st.session_state:
+        st.session_state.theme = 'dark'
+
 
 def display_hero_section():
     """Display Netflix-style hero section"""
@@ -431,22 +518,22 @@ def display_quick_stats():
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            st.markdown("""
+            st.markdown(f"""
             <div class="netflix-card" style="text-align: center;">
                 <h3 style="color: var(--medical-blue); margin-bottom: 0.5rem;">📋</h3>
-                <h2 style="color: var(--text-primary); margin: 0;">{}</h2>
+                <h2 style="color: var(--text-primary); margin: 0;">{len(patient_records)}</h2>
                 <p style="color: var(--text-secondary); margin: 0;">Patient Records</p>
             </div>
-            """.format(len(patient_records)), unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
         
         with col2:
-            st.markdown("""
+            st.markdown(f"""
             <div class="netflix-card" style="text-align: center;">
                 <h3 style="color: var(--medical-green); margin-bottom: 0.5rem;">🧠</h3>
-                <h2 style="color: var(--text-primary); margin: 0;">{}</h2>
+                <h2 style="color: var(--text-primary); margin: 0;">{len(diagnostic_history)}</h2>
                 <p style="color: var(--text-secondary); margin: 0;">Analyses Run</p>
             </div>
-            """.format(len(diagnostic_history)), unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
         
         with col3:
             avg_confidence = 0
@@ -458,13 +545,13 @@ def display_quick_stats():
                 if confidences:
                     avg_confidence = sum(confidences) / len(confidences)
             
-            st.markdown("""
+            st.markdown(f"""
             <div class="netflix-card" style="text-align: center;">
                 <h3 style="color: var(--medical-purple); margin-bottom: 0.5rem;">📊</h3>
-                <h2 style="color: var(--text-primary); margin: 0;">{:.0%}</h2>
+                <h2 style="color: var(--text-primary); margin: 0;">{avg_confidence:.0%}</h2>
                 <p style="color: var(--text-secondary); margin: 0;">Avg Confidence</p>
             </div>
-            """.format(avg_confidence), unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
         
         with col4:
             st.markdown("""
@@ -477,7 +564,6 @@ def display_quick_stats():
 
 def main():
     """Main application function"""
-    load_css()
     initialize_components()
     
     auth_manager = st.session_state.auth_manager
@@ -487,7 +573,14 @@ def main():
     if 'user' not in st.session_state or not st.session_state.user:
         auth_manager.display_auth_form()
         return
+
+    # Retrieve user's theme preference from the database after a successful login
+    user_id = st.session_state.user['id']
+    user_prefs = st.session_state.db_manager.get_user_preferences(user_id)
+    st.session_state.theme = user_prefs['theme_preference']
     
+    load_css(st.session_state.theme)
+
     # Display hero section
     display_hero_section()
     
@@ -500,7 +593,7 @@ def main():
         "📋 New Analysis", 
         "📊 Patient Records", 
         "🧠 Diagnostic History", 
-        "⚙️ Settings"
+        "⚙ Settings"
     ])
     
     with tab1:
@@ -520,7 +613,7 @@ def main():
         display_diagnostic_history()
     
     with tab5:
-        st.markdown("## ⚙️ User Settings")
+        st.markdown("## ⚙ User Settings")
         display_user_settings()
 
 def display_dashboard():
@@ -555,21 +648,19 @@ def display_dashboard():
     
     with col2:
         st.markdown("### Quick Actions")
-        
-        if st.button("🆕 New Analysis", key="quick_new_analysis"):
-            st.switch_page("📋 New Analysis")
-        
-        if st.button("📁 Upload Records", key="quick_upload"):
-            st.switch_page("📋 New Analysis")
-        
-        if st.button("📊 View Reports", key="quick_reports"):
-            st.switch_page("🧠 Diagnostic History")
+        st.info("Use the tabs above to navigate to different sections of the application.")
 
 def display_new_analysis():
     """Display new analysis interface"""
     st.markdown("### Upload Patient Data")
     
-    # File upload section
+    user_id = st.session_state.user['id']
+    user_prefs = st.session_state.db_manager.get_user_preferences(user_id)
+    
+    default_confidence_threshold = user_prefs.get('default_confidence_threshold', 0.3)
+    default_max_diagnoses = user_prefs.get('default_max_diagnoses', 8)
+    default_enable_red_flags = user_prefs.get('enable_red_flags', True)
+
     st.markdown("""
     <div style="background: var(--card-dark); padding: 2rem; border-radius: 15px; border: 2px dashed rgba(255, 255, 255, 0.2); margin-bottom: 2rem;">
         <div style="text-align: center;">
@@ -585,81 +676,95 @@ def display_new_analysis():
         type=['csv', 'json', 'txt', 'pdf']
     )
     
+    # Analysis parameters
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        confidence_threshold = st.slider(
+            "Confidence Threshold",
+            min_value=0.0,
+            max_value=1.0,
+            value=default_confidence_threshold,
+            step=0.1
+        )
+    
+    with col2:
+        max_diagnoses = st.number_input(
+            "Maximum Diagnoses",
+            min_value=3,
+            max_value=15,
+            value=default_max_diagnoses
+        )
+    
+    enable_red_flags = st.checkbox(
+        "Enable Red Flag Detection", 
+        value=default_enable_red_flags
+    )
+    
+    # Display file content if files are uploaded
     if uploaded_files:
         for uploaded_file in uploaded_files:
+            file_extension = uploaded_file.name.split('.')[-1].lower()
+            
             with st.expander(f"📄 {uploaded_file.name}", expanded=True):
-                if uploaded_file.name.endswith('.csv'):
-                    df = pd.read_csv(uploaded_file)
-                    st.dataframe(df)
-                elif uploaded_file.name.endswith('.json'):
-                    data = json.load(uploaded_file)
-                    st.json(data)
-                else:
-                    content = str(uploaded_file.read(), "utf-8")
-                    st.text_area("File Content", content, height=200)
-        
-        # Analysis parameters
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            confidence_threshold = st.slider(
-                "Confidence Threshold",
-                min_value=0.0,
-                max_value=1.0,
-                value=0.3,
-                step=0.1
-            )
-        
-        with col2:
-            max_diagnoses = st.number_input(
-                "Maximum Diagnoses",
-                min_value=3,
-                max_value=15,
-                value=8
-            )
-        
-        enable_red_flags = st.checkbox("Enable Red Flag Detection", value=True)
-        
-        if st.button("🧠 Run AI Analysis", type="primary"):
+                try:
+                    # Read the file content once into a buffer
+                    file_content = uploaded_file.getvalue()
+                    
+                    if file_extension == 'csv':
+                        df = pd.read_csv(StringIO(file_content.decode("utf-8")))
+                        st.dataframe(df)
+                    elif file_extension == 'json':
+                        data = json.loads(file_content.decode("utf-8"))
+                        st.json(data)
+                    else:
+                        content = file_content.decode("utf-8")
+                        st.text_area("File Content", content, height=200)
+                except Exception as e:
+                    st.error(f"Error displaying file content: {e}")
+
+    # Logic for running analysis
+    if st.button("🧠 Run AI Analysis", type="primary"):
+        if not uploaded_files:
+            st.warning("Please upload one or more patient data files to run the analysis.")
+        else:
             with st.spinner("Running diagnostic analysis..."):
-                # Process files and run analysis
                 data_processor = st.session_state.data_processor
                 diagnostic_engine = st.session_state.diagnostic_engine
                 
                 processed_data = []
                 for file in uploaded_files:
                     try:
-                        file_data = data_processor.process_file(file)
-                        processed_data.extend(file_data)
+                        # Reset file pointer and pass a copy of the content to the processor
+                        file.seek(0)
+                        processed_data.extend(data_processor.process_file(file))
                     except Exception as e:
                         st.error(f"Error processing {file.name}: {str(e)}")
                         continue
                 
                 if processed_data:
-                    # Save patient data
-                    user_id = st.session_state.user['id']
                     record_id = st.session_state.db_manager.save_patient_data(
                         user_id, processed_data, 
                         f"batch_{datetime.now().strftime('%Y%m%d_%H%M%S')}", 
                         "multi"
                     )
                     
-                    # Run diagnostic analysis
                     results = diagnostic_engine.analyze_patient_data(
                         processed_data, confidence_threshold, 
                         max_diagnoses, enable_red_flags
                     )
                     
-                    # Save results
                     if record_id:
                         st.session_state.db_manager.save_diagnostic_results(
                             user_id, record_id, results, 
                             confidence_threshold, max_diagnoses
                         )
                     
-                    # Display results
                     st.success("✅ Analysis completed successfully!")
                     display_analysis_results(results)
+                else:
+                    st.error("Analysis failed. No valid patient data could be processed from the uploaded files.")
+            
 
 def display_analysis_results(results):
     """Display analysis results in Netflix style"""
@@ -667,19 +772,17 @@ def display_analysis_results(results):
         st.error("No results to display")
         return
     
-    # Red flags
     if results.get('red_flags'):
         st.markdown("### 🚨 Critical Conditions Detected")
         for flag in results['red_flags']:
             st.markdown(f"""
             <div class="netflix-card" style="border-left: 4px solid var(--danger-red);">
-                <h4 style="color: var(--danger-red); margin-bottom: 0.5rem;">⚠️ {flag.get('condition', 'Unknown')}</h4>
+                <h4 style="color: var(--danger-red); margin-bottom: 0.5rem;">⚠ {flag.get('condition', 'Unknown')}</h4>
                 <p style="color: var(--text-secondary); margin: 0;">{flag.get('reasoning', 'No reasoning provided')}</p>
                 <p style="color: var(--text-primary); margin-top: 0.5rem; font-weight: 600;">Action: {flag.get('action', 'Consult healthcare provider')}</p>
             </div>
             """, unsafe_allow_html=True)
     
-    # Diagnoses
     if results.get('diagnoses'):
         st.markdown("### 🎯 Differential Diagnoses")
         
@@ -726,7 +829,30 @@ def display_user_settings():
     """Display user settings"""
     user_dashboard = UserDashboard(st.session_state.db_manager)
     user_id = st.session_state.user['id']
+    
+    st.markdown("### Theme Preferences")
+    
+    user_prefs = st.session_state.db_manager.get_user_preferences(user_id)
+    
+    current_theme = user_prefs.get('theme_preference', 'dark')
+    
+    selected_theme = st.radio(
+        "Choose your preferred theme:",
+        options=['dark', 'light'],
+        index=0 if current_theme == 'dark' else 1,
+        format_func=lambda x: f"{x.title()} Mode"
+    )
+
+    if selected_theme != current_theme:
+        user_prefs['theme_preference'] = selected_theme
+        st.session_state.db_manager.update_user_preferences(user_id, user_prefs)
+        st.session_state.theme = selected_theme
+        st.success(f"Theme updated to {selected_theme.title()}! Reloading...")
+        st.rerun()
+
+    st.markdown("---")
     user_dashboard.display_user_settings(user_id)
+
 
 if __name__ == "__main__":
     main()

@@ -33,6 +33,7 @@ class DataProcessor:
         """
         Process uploaded file and return structured patient data
         """
+        st.info(f"DEBUG: Starting to process file: {uploaded_file.name}")
         try:
             file_extension = uploaded_file.name.split('.')[-1].lower()
             
@@ -52,10 +53,12 @@ class DataProcessor:
             
         except Exception as e:
             logging.error(f"Error processing file {uploaded_file.name}: {e}")
+            st.error(f"DEBUG: FAILED to process {uploaded_file.name}. Error: {e}")
             raise Exception(f"Failed to process {uploaded_file.name}: {str(e)}")
 
     def _process_csv(self, uploaded_file) -> List[Dict[str, Any]]:
         """Process CSV file"""
+        st.info(f"DEBUG: Processing CSV file: {uploaded_file.name}")
         try:
             # Read CSV file
             df = pd.read_csv(uploaded_file)
@@ -72,16 +75,27 @@ class DataProcessor:
                 standardized_record = self._standardize_field_names(record)
                 standardized_records.append(standardized_record)
             
+            st.success(f"DEBUG: Successfully processed {len(records)} records from CSV.")
             return standardized_records
             
         except Exception as e:
+            st.error(f"DEBUG: FAILED to process CSV. Error: {e}")
             raise Exception(f"Error processing CSV file: {str(e)}")
 
     def _process_json(self, uploaded_file) -> List[Dict[str, Any]]:
         """Process JSON file"""
+        st.info(f"DEBUG: Processing JSON file: {uploaded_file.name}")
         try:
-            # Read JSON file
-            json_data = json.load(uploaded_file)
+            # Read JSON file content as a string
+            content = uploaded_file.read().decode("utf-8")
+            
+            # Check if content is empty or only whitespace
+            if not content.strip():
+                st.warning("DEBUG: JSON file is empty.")
+                raise ValueError("JSON file is empty.")
+            
+            # Read JSON data from the string
+            json_data = json.loads(content)
             
             # Handle different JSON structures
             if isinstance(json_data, list):
@@ -104,88 +118,60 @@ class DataProcessor:
                     standardized_record = self._standardize_field_names(record)
                     standardized_records.append(standardized_record)
             
+            st.success(f"DEBUG: Successfully processed {len(records)} records from JSON.")
             return standardized_records
             
         except json.JSONDecodeError as e:
+            st.error(f"DEBUG: FAILED to process JSON. Invalid format: {e}")
             raise Exception(f"Invalid JSON format: {str(e)}")
         except Exception as e:
+            st.error(f"DEBUG: FAILED to process JSON. Error: {e}")
             raise Exception(f"Error processing JSON file: {str(e)}")
 
     def _process_text(self, uploaded_file) -> List[Dict[str, Any]]:
-        """Process text file"""
+        """
+        Process text file
+        
+        This corrected version uses a more robust line-by-line parsing approach.
+        """
+        st.info(f"DEBUG: Processing TXT file: {uploaded_file.name}")
         try:
             # Read text content
             content = str(uploaded_file.read(), "utf-8")
+            if not content.strip():
+                st.warning("DEBUG: TXT file is empty.")
+                return []
             
-            # Parse structured text (assuming key: value format)
             record = {}
-            lines = content.split('\n')
-            
-            current_section = 'general'
-            sections = {
-                'general': record,
-                'demographics': {},
-                'vitals': {},
-                'symptoms': {},
-                'history': {},
-                'medications': {},
-                'labs': {}
-            }
+            lines = content.strip().split('\n')
             
             for line in lines:
                 line = line.strip()
                 if not line:
                     continue
                 
-                # Check for section headers
-                line_lower = line.lower()
-                if any(section in line_lower for section in ['demographic', 'patient info']):
-                    current_section = 'demographics'
-                    continue
-                elif any(section in line_lower for section in ['vital', 'signs']):
-                    current_section = 'vitals'
-                    continue
-                elif any(section in line_lower for section in ['symptom', 'complaint']):
-                    current_section = 'symptoms'
-                    continue
-                elif any(section in line_lower for section in ['history', 'medical history']):
-                    current_section = 'history'
-                    continue
-                elif any(section in line_lower for section in ['medication', 'drugs']):
-                    current_section = 'medications'
-                    continue
-                elif any(section in line_lower for section in ['lab', 'laboratory']):
-                    current_section = 'labs'
-                    continue
-                
-                # Parse key-value pairs
                 if ':' in line:
                     key, value = line.split(':', 1)
-                    key = key.strip().lower().replace(' ', '_')
-                    value = value.strip()
-                    
-                    if value:
-                        sections[current_section][key] = value
-                elif line and current_section in ['symptoms', 'history']:
-                    # Handle list-style entries
-                    key = f"{current_section}_entry_{len(sections[current_section])}"
-                    sections[current_section][key] = line
+                    record[key.strip()] = value.strip()
+                else:
+                    # Append unstructured text to a generic 'notes' field
+                    if 'notes' not in record:
+                        record['notes'] = []
+                    record['notes'].append(line)
             
-            # Merge all sections
-            for section_name, section_data in sections.items():
-                if section_name != 'general':
-                    record.update(section_data)
-            
-            # Standardize field names
+            # Standardize field names after parsing
             standardized_record = self._standardize_field_names(record)
             
+            st.success("DEBUG: Successfully processed TXT file.")
             return [standardized_record] if standardized_record else []
             
         except Exception as e:
+            st.error(f"DEBUG: FAILED to process TXT. Error: {e}")
             raise Exception(f"Error processing text file: {str(e)}")
 
     def _process_pdf(self, uploaded_file) -> List[Dict[str, Any]]:
         """Process PDF file"""
+        st.info(f"DEBUG: Processing PDF file: {uploaded_file.name}")
         try:
             # Extract text from PDF
             text_content = ""
@@ -197,6 +183,7 @@ class DataProcessor:
                         text_content += page_text + "\n"
             
             if not text_content.strip():
+                st.warning("DEBUG: PDF file contains no text content.")
                 raise Exception("No text content found in PDF")
             
             # Parse extracted text
@@ -205,13 +192,16 @@ class DataProcessor:
             # Standardize field names
             standardized_record = self._standardize_field_names(record)
             
+            st.success("DEBUG: Successfully processed PDF file.")
             return [standardized_record] if standardized_record else []
             
         except Exception as e:
+            st.error(f"DEBUG: FAILED to process PDF. Error: {e}")
             raise Exception(f"Error processing PDF file: {str(e)}")
 
     def _parse_medical_text(self, text: str) -> Dict[str, Any]:
         """Parse unstructured medical text"""
+        st.info("DEBUG: Parsing medical text.")
         record = {}
         lines = text.split('\n')
         
@@ -276,6 +266,7 @@ class DataProcessor:
 
     def _standardize_field_names(self, record: Dict[str, Any]) -> Dict[str, Any]:
         """Standardize field names using predefined mappings"""
+        st.info("DEBUG: Standardizing field names.")
         standardized = {}
         
         for standard_field, possible_names in self.field_mappings.items():
@@ -306,6 +297,7 @@ class DataProcessor:
 
     def validate_patient_data(self, records: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Validate patient data quality and completeness"""
+        st.info("DEBUG: Validating patient data.")
         validation_results = {
             'total_records': len(records),
             'valid_records': 0,
@@ -390,6 +382,7 @@ class DataProcessor:
 
     def get_data_summary(self, records: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Generate summary statistics of the patient data"""
+        st.info("DEBUG: Generating data summary.")
         if not records:
             return {"error": "No records to summarize"}
         

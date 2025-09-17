@@ -3,10 +3,18 @@ import json
 import logging
 from typing import Dict, List, Any, Optional
 import google.generativeai as genai
+import streamlit as st 
 
 class DiagnosticEngine:
     def __init__(self):
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY", ""))
+        # This line securely retrieves your API key from the environment variable.
+        api_key = os.getenv("GEMINI_API_KEY", "")
+        if not api_key:
+            st.error("Gemini API key not found. Please set the GEMINI_API_KEY environment variable.")
+            # In a real app, you might raise an exception or handle this gracefully.
+            # For this example, we'll continue but the API calls will fail.
+        
+        genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel('gemini-1.5-flash')
         
         # Medical diagnostic system prompt
@@ -62,7 +70,7 @@ class DiagnosticEngine:
         """
 
     def analyze_patient_data(self, patient_data: List[Dict], confidence_threshold: float = 0.3, 
-                           max_diagnoses: int = 8, enable_red_flags: bool = True) -> Dict[str, Any]:
+                            max_diagnoses: int = 8, enable_red_flags: bool = True) -> Dict[str, Any]:
         """
         Analyze patient data and return diagnostic insights
         """
@@ -70,6 +78,12 @@ class DiagnosticEngine:
             # Prepare patient data summary
             data_summary = self._prepare_data_summary(patient_data)
             
+            # --- DEBUGGING LINE ADDED HERE ---
+            print("--- DEBUG: Data Summary Sent to AI ---")
+            print(json.dumps(data_summary, indent=2))
+            print("-------------------------------------\n")
+            # --- END DEBUGGING LINE ---
+
             # Create analysis prompt
             analysis_prompt = f"""
             Analyze the following patient data and provide diagnostic insights:
@@ -96,6 +110,12 @@ class DiagnosticEngine:
             
             full_prompt = self.system_prompt + "\n\n" + analysis_prompt
             response = self.model.generate_content(full_prompt, generation_config=generation_config)
+
+            # --- DEBUGGING LINE ADDED HERE ---
+            print("--- RAW API RESPONSE TEXT ---")
+            print(response.text)
+            print("-----------------------------\n")
+            # --- END DEBUGGING LINE ---
 
             if response.text:
                 # Parse JSON response
@@ -152,13 +172,13 @@ class DiagnosticEngine:
                 
                 # Extract vital signs
                 elif any(vital in key_lower for vital in ['temperature', 'temp', 'blood_pressure', 'bp', 
-                                                        'heart_rate', 'hr', 'respiratory_rate', 'rr', 
-                                                        'oxygen', 'o2', 'pulse', 'weight', 'height', 'bmi']):
+                                                         'heart_rate', 'hr', 'respiratory_rate', 'rr', 
+                                                         'oxygen', 'o2', 'pulse', 'weight', 'height', 'bmi']):
                     summary["vital_signs"][key] = value
                 
                 # Extract symptoms and complaints
                 elif any(symptom in key_lower for symptom in ['symptom', 'complaint', 'chief_complaint',
-                                                            'present', 'pain', 'ache', 'discomfort']):
+                                                             'present', 'pain', 'ache', 'discomfort']):
                     if isinstance(value, str) and value.strip():
                         summary["symptoms"].append(f"{key}: {value}")
                     elif isinstance(value, list):
@@ -166,7 +186,7 @@ class DiagnosticEngine:
                 
                 # Extract medical history
                 elif any(hist in key_lower for hist in ['history', 'medical_history', 'past_medical',
-                                                      'surgical', 'family_history', 'allergy', 'allergies']):
+                                                       'surgical', 'family_history', 'allergy', 'allergies']):
                     if isinstance(value, str) and value.strip():
                         summary["medical_history"].append(f"{key}: {value}")
                     elif isinstance(value, list):
@@ -181,11 +201,11 @@ class DiagnosticEngine:
                 
                 # Extract laboratory results
                 elif any(lab in key_lower for lab in ['lab', 'blood', 'urine', 'glucose', 'cholesterol',
-                                                    'hemoglobin', 'hematocrit', 'wbc', 'rbc', 'platelet']):
+                                                     'hemoglobin', 'hematocrit', 'wbc', 'rbc', 'platelet']):
                     summary["laboratory_results"][key] = value
                 
                 # Extract imaging results
-                elif any(img in key_lower for img in ['xray', 'x-ray', 'ct', 'mri', 'ultrasound', 'imaging']):
+                elif any(img in key in key_lower for img in ['xray', 'x-ray', 'ct', 'mri', 'ultrasound', 'imaging']):
                     if isinstance(value, str) and value.strip():
                         summary["imaging_results"].append(f"{key}: {value}")
                 
