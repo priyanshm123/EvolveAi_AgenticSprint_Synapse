@@ -55,8 +55,8 @@ The system architecture includes:
 
 Team Name: Synapse
 
-Members: **Shahil Singh Rawat
-         **Priyanshu Mishra
-         **Prabjot Saini
-         **Shivang Rana
+Members: - Shahil Singh Rawat
+         - Priyanshu Mishra
+         - Prabjot Saini
+         - Shivang Rana
          
